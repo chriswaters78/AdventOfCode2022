@@ -9,51 +9,42 @@ namespace Day9
             var moves = File.ReadLines("input.txt").Select(str =>str.Split(' ')).Select(arr => (arr[0][0], int.Parse(arr[1])));
 
             const int KNOTS = 10;
-            var knots = Enumerable.Repeat<(int r, int c)>((0, 0), KNOTS).ToArray();
             
+            var knots = Enumerable.Repeat<(int r, int c)>((0, 0), KNOTS).ToArray();            
             var visited = new HashSet<(int r, int c)>(new[] { knots[0] });
 
             int steps = 0;
-
             print(steps, knots);
-            foreach (var move in moves)
+            
+            foreach ((char direction, int magnitude) in moves)
             {
-                var head = knots[KNOTS-1];
-                switch (move.Item1)
+                switch (direction)
                 {
                     case 'L':
-                        head.c -= move.Item2;
+                        knots[KNOTS - 1].c -= magnitude;
                         break;
                     case 'R':
-                        head.c += move.Item2;
+                        knots[KNOTS - 1].c += magnitude;
                         break;
                     case 'D':
-                        head.r -= move.Item2;
+                        knots[KNOTS - 1].r -= magnitude;
                         break;
                     case 'U':
-                        head.r += move.Item2;
+                        knots[KNOTS - 1].r += magnitude;
                         break;                                           
                 }
-
-                knots[KNOTS-1] = head;
-
-                steps++;
 
                 while (true)
                 {
                     bool anyMoved = false;
                     for (int k = KNOTS - 2; k >= 0; k--)
                     {
-                        head = knots[k + 1];
-                        var tail = knots[k];
-                        var moveResult = moveTail(tail, head);
-                        anyMoved |= moveResult.Item2;
-                        tail = moveResult.Item1;
-                        knots[k] = tail;
+                        (knots[k], bool moved) = moveTail(knots[k], knots[k + 1]);
+                        anyMoved |= moved;
 
                         if (k == 0)
                         {
-                            visited.Add(tail);
+                            visited.Add(knots[k]);
                         }
                     }
                     steps++;
@@ -75,27 +66,22 @@ namespace Day9
         {
             var ABSr = Math.Abs(head.r - tail.r);
             var ABSc = Math.Abs(head.c - tail.c);
-            bool moved = false;
 
-            //touching
             if (ABSr <= 1 && ABSc <= 1)
             {
                 return (tail, false);
             }
 
-            var notInRowAndColumn = head.r != tail.r && head.c != tail.c;
-            if (notInRowAndColumn | ABSr > 1)
+            if (ABSr >= 1)
             {
                 tail.r += (head.r - tail.r) / ABSr;
-                moved |= true;
             }
-            if (notInRowAndColumn | ABSc > 1)
+            if (ABSc >= 1)
             {
                 tail.c += (head.c - tail.c) / ABSc;
-                moved |= true;
             }
             
-            return (tail, moved);
+            return (tail, true);
         }
 
         public static void print(int steps, (int r, int c)[] knots)
