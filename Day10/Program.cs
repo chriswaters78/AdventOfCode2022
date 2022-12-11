@@ -8,9 +8,8 @@ namespace Day10
         {
             var instructions = File.ReadAllLines("input.txt");
 
-            List<(int cycle, int x)> values = new List<(int cycle, int x)>();
-            int cycle = 1;
-            int X = 1;
+            var values = new List<(int cycle, int x)>();
+            (int cycle, int X) = (1, 1);
             values.Add((1, 1));
 
             foreach (var instruction in instructions)
