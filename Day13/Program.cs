@@ -16,8 +16,6 @@ namespace Day13
             public List<INode> Nodes { get; set; }
         }
 
-        static Dictionary<string, List<string>> solutions = new Dictionary<string, List<string>>();
-
         static void Main(string[] args)
         {
             Console.WriteLine($"Part1: {part1()}");
@@ -30,15 +28,16 @@ namespace Day13
                 .Concat(new[] { "[[6]]", "[[2]]" })
                 .ToList();
 
-            solutions = (from left in lines
+            //the most inefficient sort ever
+            var solved = (from left in lines
                          from right in lines
                          where left != right
                          && compare(parse(left).node, parse(right).node) == 1
                          select new { left, right })
             .GroupBy(a => a.left)
-            .ToDictionary(grp => grp.Key, grp => grp.Select(a => a.right).ToList());
+            .OrderByDescending(grp => grp.Count())
+            .Select(grp => grp.Key).ToList();
 
-            var solved = solutions.OrderByDescending(kvp => kvp.Value.Count).Select(kvp => kvp.Key).ToList();
             return (solved.IndexOf("[[2]]") + 1) * (solved.IndexOf("[[6]]") + 1);
         }
         static int part1()
