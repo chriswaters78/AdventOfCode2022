@@ -1,9 +1,13 @@
-﻿namespace Day14
+﻿using System.Diagnostics;
+
+namespace Day14
 {
     internal class Program
     {
         static void Main(string[] args)
         {
+            Stopwatch watch = new Stopwatch();
+            watch.Start();
             var walls = File.ReadAllLines("input.txt").Select(str => str.Split(" -> ").Select(str => str.Split(",")).Select(arr => (x: int.Parse(arr[0]), y: int.Parse(arr[1]))).ToList()).ToList();
 
             var maxY = walls.SelectMany(wall => wall.Select(tp => tp.y)).Max();
@@ -75,6 +79,7 @@
         done:;
 
             var part2 = grid.Count(kvp => kvp.Value == 'o') + 1;
+            Console.WriteLine($"Part2: {part2} in {watch.ElapsedMilliseconds}ms");
         }
     }
 }
