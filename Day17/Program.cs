@@ -35,8 +35,9 @@ namespace Day17
 
         static HashSet<(int x, int y)> rocks = new HashSet<(int x, int y)>();
 
-        const int MAXY = 5000;
-        
+        const int MAXR = 10000;
+        const int MAXY = 2*MAXR;
+
         static void Main(string[] args)
         {
             Stopwatch watch = new Stopwatch();
@@ -54,13 +55,39 @@ namespace Day17
                 rocks.Add((8, y));
             }
 
+            //find the leftover from when the pattern repeates
+            ulong ROCKS = 1000000000000;
+            ROCKS -= 1276;
+
+            ulong div = ROCKS / 1735;
+            ulong rem = ROCKS % 1735;
+
+            //then answer = 1912 + div * 2711 + tallestRock
+
             int tallestRock = 0;
 
+            List<(int tallestRock, int r, int s)> repeats = new List<(int tallestRock, int r, int s)>();
 
-            int j = 0;
-            for (int r = 0; r < 2022; r++)
+            
+            int j = 7644;
+            for (int r = 1; r <= (int) rem; r++)
             {
-                Console.WriteLine(print());
+                bool allRock = true;
+                for (int x = 0; x < 8; x++)
+                {
+                    if (!rocks.Contains((x, tallestRock)))
+                    {
+                        allRock = false;
+                        break;
+                    }
+                }
+
+                if (allRock)
+                {
+                    Console.WriteLine($"All rock found at {tallestRock}, S:{r % shapes.Length}, J:{j % jets.Length}, r:{r}");
+                    repeats.Add((tallestRock, r % shapes.Length, j % jets.Length));
+                    //Console.WriteLine(print());
+                }
 
                 int currentX = 3;
                 int currentY = tallestRock + 4;
@@ -99,7 +126,12 @@ namespace Day17
             }
 
             var part1 = tallestRock;
+
+            ulong part2 = 1912 + (ulong) tallestRock;
+            part2 += div * 2711;
+
             Console.WriteLine($"Part1: {part1} in {watch.ElapsedMilliseconds}ms");
+            Console.WriteLine($"Part2: {part2} in {watch.ElapsedMilliseconds}ms");
         }
 
         private static string print()
@@ -108,7 +140,7 @@ namespace Day17
 
             List<StringBuilder> rows = new List<StringBuilder>();
             var sb = new StringBuilder();
-            sb.AppendLine("+-------+");
+            sb.AppendLine(" +-------+");
             rows.Add(sb);
             for (int y = 1; y <= maxY; y++)
             {
