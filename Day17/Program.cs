@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
+using System;
 
 namespace Day17
 {
@@ -72,21 +73,29 @@ namespace Day17
             int j = 7644;
             for (int r = 1; r <= (int) rem; r++)
             {
-                bool allRock = true;
-                for (int x = 0; x < 8; x++)
+                if (false)
                 {
-                    if (!rocks.Contains((x, tallestRock)))
+                    bool allRock = true;
+                    for (int x = 0; x < 8; x++)
                     {
-                        allRock = false;
-                        break;
+                        if (!rocks.Contains((x, tallestRock)))
+                        {
+                            allRock = false;
+                            break;
+                        }
                     }
-                }
 
-                if (allRock)
-                {
-                    Console.WriteLine($"All rock found at {tallestRock}, S:{r % shapes.Length}, J:{j % jets.Length}, r:{r}");
-                    repeats.Add((tallestRock, r % shapes.Length, j % jets.Length));
-                    //Console.WriteLine(print());
+                    if (allRock)
+                    {
+                        //Running the input this finds these two lines
+                        //All rock found at 1912, S: 1, J: 7644
+                        //All rock found at 4623, S: 1, J: 7644
+                        //from this we can see there is a repeating pattern that starts after 1276 rocks, and repeats every 1735 rocks for 2711 height gain
+                        //the pattern starts at from s=1, j=7644
+                        //so we just need to find the remainder that takes us to the 1e12 rocks max height
+                        Console.WriteLine($"All rock found at {tallestRock}, S:{r % shapes.Length}, J:{j % jets.Length}, r:{r}");
+                        repeats.Add((tallestRock, r % shapes.Length, j % jets.Length));
+                    }
                 }
 
                 int currentX = 3;
@@ -134,6 +143,20 @@ namespace Day17
             Console.WriteLine($"Part2: {part2} in {watch.ElapsedMilliseconds}ms");
         }
 
+        private static bool anyHit(int x, int y, int r)
+        {
+            foreach ((int ox, int oy) in shapes[r % shapes.Length])
+            {
+                var next = (x + ox, y + oy);
+                if (rocks.Contains(next))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static string print()
         {
             var maxY = rocks.Where(tp => tp.x > 0 && tp.x < 8).Max(tp => tp.y);
@@ -158,20 +181,6 @@ namespace Day17
             }
 
             return String.Join("", rows.Select(sb => sb.ToString()).Reverse());
-        }
-
-        private static bool anyHit(int x, int y, int r)
-        {
-            foreach ((int ox, int oy) in shapes[r % shapes.Length])
-            {
-                var next = (x + ox, y + oy);
-                if (rocks.Contains(next))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 }
