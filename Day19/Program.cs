@@ -5,7 +5,7 @@ namespace Day19
 {
     internal class Program
     {
-        const int MINUTES = 24;
+        const int MINUTES = 32;
         //ore, clay, obsidian, geode
         static List<List<((int ore, int clay, int obsidian) costs, (int ore, int clay, int obsidian, int geode) produces)>> blueprints;
         static Dictionary<(int time, (int ore, int clay, int obsidian, int geode) materials, (int ore, int clay, int obsidian, int geode) production), int> state;
@@ -24,7 +24,8 @@ namespace Day19
 
             List<(int, int)> answers = new List<(int, int)>();
 
-            for (int i = 1; i <= blueprints.Count; i++)
+            //for (int i = 1; i <= blueprints.Count; i++)
+            for (int i = 1; i <= 3; i++)
             {
                 Console.WriteLine($"Testing blue print {i}");
                 best = 0;
@@ -36,7 +37,10 @@ namespace Day19
             }
 
             var part1 = answers.Sum(tp => tp.Item1 * tp.Item2);
-            Console.WriteLine($"Part 1: {part1}, state count {state.Count}");
+            //Console.WriteLine($"Part 1: {part1}, state count {state.Count}");
+
+            var part2 = answers.Select(tp => tp.Item2).Aggregate(1, (int acc, int a) => acc * a);
+            Console.WriteLine($"Part 2: {part2}, state count {state.Count}");
         }
 
         static int best;
@@ -60,19 +64,27 @@ namespace Day19
                 return materialsNext.Item4;
             }
 
-            foreach (var blueprint in blueprints[bi])
+            //foreach (var blueprint in blueprints[bi])
+            for (int bii = blueprints[bi].Count - 1; bii >= 0; bii--)
             {
+                var blueprint = blueprints[bi][bii];
                 if (materials.ore >= blueprint.costs.ore && materials.clay >= blueprint.costs.clay && materials.obsidian >= blueprint.costs.obsidian)
                 {
                     //we could build one
                     var productionNext = (production.ore + blueprint.produces.ore, production.clay + blueprint.produces.clay, production.obsidian + blueprint.produces.obsidian, production.geode + blueprint.produces.geode);
                     var materialsNextMinusCost = (materialsNext.ore - blueprint.costs.ore, materialsNext.clay - blueprint.costs.clay, materialsNext.obsidian - blueprint.costs.obsidian, materialsNext.geode);
                     maxGeode = Math.Max(maxGeode, solve(bi, time + 1, materialsNextMinusCost, productionNext));
+
+                    if (blueprint.produces.geode > 0)
+                    {
+                        goto done;
+                    }
                 }
             }
 
             maxGeode = Math.Max(maxGeode, solve(bi, time + 1, materialsNext, production));
-
+        done:;
+            
             state[(time, materials, production)] = maxGeode;
             return maxGeode;
         }
