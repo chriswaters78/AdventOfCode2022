@@ -10,6 +10,7 @@ namespace Day19
         {
             public Material Add(Material other) => new Material(ore + other.ore, clay + other.clay, obsidian + other.obsidian, geode + other.geode);
             public Material Subtract(Material other) => new Material(ore - other.ore, clay - other.clay, obsidian - other.obsidian, geode - other.geode);
+            public Material Multiply(int multiple) => new Material(ore * multiple, clay * multiple, obsidian * multiple, geode * multiple);
         }
 
         record struct State(int time, Material material, Material production);
@@ -60,23 +61,36 @@ namespace Day19
                 return result;
             }
 
-            var nextState = state with { time = state.time + 1, material = state.material.Add(state.production) };
-            if (state.time == MAXMINUTES)
-            {
-                return nextState.material.geode;
-            }
+            int maxGeode = state.material.geode;
 
-            int maxGeode = 0;
+            //we are only interested in testing our next ACTION
+            //which is always to build a robot
             foreach (var blueprint in blueprints)
             {
-                if (state.material.ore >= blueprint.costs.ore && state.material.clay >= blueprint.costs.clay && state.material.obsidian >= blueprint.costs.obsidian)
+                //find the next time we will be able to build this robot
+                //which will be when we have accumulated sufficient material
+                var timeForOre = Math.Ceiling((decimal)(blueprint.costs.ore - state.material.ore) / (state.production.ore == 0 ? 0.001m  : state.production.ore));
+                var timeForClay = Math.Ceiling((decimal)(blueprint.costs.clay - state.material.clay) / (state.production.clay == 0 ? 0.001m : state.production.clay));
+                var timeForObsidian = Math.Ceiling((decimal)(blueprint.costs.obsidian - state.material.obsidian) / (state.production.obsidian == 0 ? 0.001m : state.production.obsidian));
+
+                var nextTime = (int) Math.Max(Math.Max(timeForOre, timeForClay), timeForObsidian);
+
+                //any we can build immediately have already been dealt with
+                //so only consider FUTURE robots
+                if (nextTime > 0 && state.time + nextTime < MAXMINUTES)
                 {
-                    maxGeode = Math.Max(maxGeode, Solve(MAXMINUTES, stateCache, blueprints, nextState with { material = nextState.material.Subtract(blueprint.costs), production = nextState.production.Add(blueprint.production) }));
+                    maxGeode = Math.Max(maxGeode, Solve(MAXMINUTES, stateCache, blueprints, 
+                        state with { 
+                            time = state.time + nextTime, 
+                            material = state.material.Add(state.production.Multiply(nextTime)).Subtract(blueprint.costs), 
+                            production = blueprint.production.geode == 0 
+                                ? state.production.Add(blueprint.production)
+                                //if building a geode we need to add the full score on immediately
+                                : state.production.Add(blueprint.production.Multiply(MAXMINUTES - state.time - nextTime))
+                        }));
                 }
             }
-
-            maxGeode = Math.Max(maxGeode, Solve(MAXMINUTES, stateCache, blueprints, nextState));
-            
+                       
             stateCache[state] = maxGeode;
             return maxGeode;
         }
