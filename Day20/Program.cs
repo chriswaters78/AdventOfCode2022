@@ -1,79 +1,64 @@
-﻿using System.Text;
+﻿using System.Collections;
+using System.Diagnostics;
+using System.Text;
 
 namespace Day20
 {
     internal class Program
     {
-        public class Node
+        public class Node : IEnumerable<long>
         {
             public Node Previous;
             public Node Next;
             public long Value;
+
+            public IEnumerator<long> GetEnumerator()
+            {
+                var current = this;
+                while (true)
+                {
+                    yield return current.Value;
+                    current = current.Next;
+                }
+            }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
         
         static void Main(string[] args)
         {
-            List<Node> nodes = new List<Node>();
-            foreach ((var value, var index) in File.ReadAllLines($"{args[0]}.txt").Select((str, i) => (long.Parse(str), i)))
-            {
-                var node = new Node() { Value = value * (long) 811589153 };
-                if (index > 0)
-                {
-                    node.Previous = nodes[index - 1];
-                    nodes[index - 1].Next = node;                    
-                }
-                nodes.Add(node);
-            }
-            nodes.Last().Next = nodes.First();
-            nodes.First().Previous = nodes.Last();
+            Stopwatch watch = new Stopwatch();
+            watch.Start();
 
-            for (int r = 0; r < 10; r++)
-            foreach (var node in nodes)
-            {
-                //moving L-1 places brings us back to the start
-                var absValue = Math.Abs(node.Value) % (nodes.Count - 1);
-                for (int i = 0; i < absValue; i++)
-                {
-                    if (node.Value > 0)
-                    {
-                        moveRight(node);
-                    }
-                    else
-                    {
-                        moveRight(node.Previous);
-                    }
-                }
-                //Console.WriteLine($"Moved {node.Value} {node.Value}");
-                //Console.WriteLine(print(nodes.First()));
-             }
+            var numbers = File.ReadAllLines($"{args[0]}.txt").Select(long.Parse).ToList();
+            
+            Console.WriteLine($"Part 1: {solve(createLinkedList(numbers, 1), 1)} in {watch.ElapsedMilliseconds}ms");
 
-            var index0 = nodes.Find(node => node.Value == 0);
-
-            var current = index0;
-            var answers = new List<long>();
-            for (int i = 0; i < 3000; i++)
-            {
-                current = current.Next;
-                answers.Add(current.Value);
-            }
-
-            var part1 = answers[999] + answers[1999] + answers[2999];
-
-            Console.WriteLine($"Part 1: {part1}");
+            watch.Restart();
+            Console.WriteLine($"Part 2: {solve(createLinkedList(numbers, 811589153), 10)} in {watch.ElapsedMilliseconds}ms");
         }
-
-        private static string print(Node node)
+        
+        private static long solve(List<Node> nodes, int repetitions)
         {
-            List<long> ints = new List<long>();
-            var current = node;
-            do
+            for (int r = 0; r < repetitions; r++)
             {
-                ints.Add(current.Value);
-                current = current.Next;
-            } while (current != node);
-             
-            return String.Join(", ", ints);
+                foreach (var node in nodes)
+                {
+                    //moving L-1 places brings us back to the start
+                    var absValue = Math.Abs(node.Value) % (nodes.Count - 1);
+                    for (int i = 0; i < absValue; i++)
+                    {
+                        moveRight(node.Value > 0 ? node : node.Previous);
+                    }
+                    //Console.WriteLine($"Moved {node.Value} {node.Value}");
+                    //Console.WriteLine(print(nodes.First()));
+                }
+            }
+
+            var answers = nodes.Find(node => node.Value == 0).Take(3001).ToList();
+
+            return answers[1000] + answers[2000] + answers[3000];
         }
+
         private static void moveRight(Node node)
         {
             var node1 = node.Previous;
@@ -87,6 +72,38 @@ namespace Day20
             node2.Previous = node3;
             node2.Next = node4;
             node4.Previous = node2;
+        }
+
+        private static List<Node> createLinkedList(List<long> numbers, int multiplier)
+        {
+            var nodes = new List<Node>();
+            foreach ((var value, var index) in numbers.Select((value, i) => (value, i)))
+            {
+                var node = new Node() { Value = value * (long)multiplier };
+                if (index > 0)
+                {
+                    node.Previous = nodes[index - 1];
+                    nodes[index - 1].Next = node;
+                }
+                nodes.Add(node);
+            }
+            nodes.Last().Next = nodes.First();
+            nodes.First().Previous = nodes.Last();
+
+            return nodes;
+        }
+        
+        private static string print(Node node)
+        {
+            List<long> ints = new List<long>();
+            var current = node;
+            do
+            {
+                ints.Add(current.Value);
+                current = current.Next;
+            } while (current != node);
+
+            return String.Join(", ", ints);
         }
     }
 }
