@@ -47,11 +47,11 @@ namespace Day19
 
         static List<(int index, int geodes)> RunPart(int MAXMINUTES, IEnumerable<List<Blueprint>> blueprintSets)
         {
-            best = 0;
             var answers = new List<(int, int)>();
             var emptyBlueprint = new Blueprint(new Material(0, 0, 0), new Material(0, 0, 0), false);
             foreach ((var blueprints, int i) in blueprintSets.Select((bp, i) => (bp, i)))
             {
+                best = 0;
                 //note we start with 1 ore, as this is the material AFTER the minute being considered
                 var answer = Solve(MAXMINUTES, new Dictionary<State, int>(), blueprints, new State(1, new Material(0, 0, 0), new Material(1, 0, 0), 0, emptyBlueprint));
                 Console.WriteLine($"Blueprint {i + 1}: {answer}");
@@ -67,7 +67,15 @@ namespace Day19
             {
                 return result;
             }
-            
+
+            //e.g 4 minutes left, best we can do is build one to score next minute and onwards
+            int bestFromHere = (MAXMINUTES - state.time) * (MAXMINUTES - state.time + 1) / 2;
+            if (bestFromHere + state.currentScore <= best)
+            {
+                return 0;
+            }
+
+
             int maxGeode = state.currentScore;
 
             //we are only interested in testing our next ACTION
@@ -110,6 +118,10 @@ namespace Day19
                 }
             }
 
+            if (maxGeode > best)
+            {
+                best = maxGeode;
+            }
             stateCache[state] = maxGeode;
             return maxGeode;
         }
