@@ -15,7 +15,7 @@ namespace Day19
         
         record struct Blueprint(Material costs, Material production, bool isGeode);
 
-        record struct State(int time, Material material, Material production, int currentScore, Blueprint toBuild);
+        record struct State(int time, Material material, Material production, int currentScore);
         
         static List<List<Blueprint>> blueprintSets;
 
@@ -52,8 +52,8 @@ namespace Day19
             foreach ((var blueprints, int i) in blueprintSets.Select((bp, i) => (bp, i)))
             {
                 best = 0;
-                //note we start with 1 ore, as this is the material AFTER the minute being considered
-                var answer = Solve(MAXMINUTES, new Dictionary<State, int>(), blueprints, new State(1, new Material(0, 0, 0), new Material(1, 0, 0), 0, emptyBlueprint));
+                //note we start at t=2 with 1 ore
+                var answer = Solve(MAXMINUTES, new Dictionary<State, int>(), blueprints, new State(2, new Material(1, 0, 0), new Material(1, 0, 0), 0));
                 Console.WriteLine($"Blueprint {i + 1}: {answer}");
                 answers.Add((i + 1, answer));
             }
@@ -75,54 +75,38 @@ namespace Day19
                 return 0;
             }
 
-
             int maxGeode = state.currentScore;
 
             //we are only interested in testing our next ACTION
             //which is always to build a robot
             foreach (var blueprint in blueprints)
             {
-                //we have ALWAYS built a robot this turn (except the first turn)
+                //we have ALWAYS built a robot last turn, the production reflects this
+                //the material is what we have at the start of the minute
                 //so minimum time until we can build next robot is next turn, or the first turn when we have sufficient material
 
-                //e.g. we have 1 ore, with 1 ore production (next turn) and it costs 4 ore to build
-                var needed = blueprint.costs.Subtract(state.material).Add(state.toBuild.costs);
-                var neededNextMinute = needed.Subtract(state.production);
-                var productionNextMinute = state.production.Add(state.toBuild.production);
-                
-                var timeForOre = needed.ore <= 0 ? 1 : productionNextMinute.ore == 0 ? MAXMINUTES :
-                    Math.Ceiling((decimal)neededNextMinute.ore / productionNextMinute.ore) + 1;
+                var needed = blueprint.costs.Subtract(state.material);
 
-                var timeForClay = needed.clay <= 0 ? 1 : productionNextMinute.clay == 0 ? MAXMINUTES :
-                    Math.Ceiling((decimal)neededNextMinute.clay / productionNextMinute.clay) + 1;
+                var timeForOre = Math.Ceiling((decimal)needed.ore / (state.production.ore == 0 ? 0.001m : (decimal) state.production.ore));
+                var timeForClay = Math.Ceiling((decimal)needed.clay / (state.production.clay == 0 ? 0.001m : (decimal)state.production.clay));
+                var timeForObsidian = Math.Ceiling((decimal)needed.obsidian / (state.production.obsidian == 0 ? 0.001m : (decimal)state.production.obsidian));
 
-                var timeForObsidian = needed.obsidian <= 0 ? 1 : productionNextMinute.obsidian == 0 ? MAXMINUTES :
-                    Math.Ceiling((decimal)neededNextMinute.obsidian / productionNextMinute.obsidian) + 1;
+                var nextTime = (int) Math.Max(0,Math.Max(Math.Max(timeForOre, timeForClay), timeForObsidian));
 
-                var nextTime = (int) Math.Max(Math.Max(timeForOre, timeForClay), timeForObsidian);
-
-                //state.material is the material we have at the start of this minute
-                //toBuild is the blueprint we will build
-                //state.production is the existing production we have
-                //state.currentScore is the final value (at MAXMINUTES) of any geodes we have already built
                 if (state.time + nextTime < MAXMINUTES)
                 {
                     maxGeode = Math.Max(maxGeode, Solve(MAXMINUTES, stateCache, blueprints, 
                         state with { 
-                            time = state.time + nextTime, 
-                            material = state.material.Add(state.production).Add(state.production.Add(state.toBuild.production).Multiply(nextTime - 1)).Subtract(state.toBuild.costs), 
-                            production = state.production.Add(state.toBuild.production),
+                            time = state.time + nextTime + 1, 
+                            material = state.material.Add(state.production).Add(state.production.Multiply(nextTime)).Subtract(blueprint.costs), 
+                            production = state.production.Add(blueprint.production),
                             currentScore = state.currentScore + (blueprint.isGeode ? (MAXMINUTES - state.time - nextTime) : 0),
-                            toBuild = blueprint
                         }));
                 }
             }
 
-            if (maxGeode > best)
-            {
-                best = maxGeode;
-            }
             stateCache[state] = maxGeode;
+            best = Math.Max(best, maxGeode);
             return maxGeode;
         }
     }
