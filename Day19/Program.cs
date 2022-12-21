@@ -17,7 +17,7 @@ namespace Day19
 
         record struct State(int time, Material material, Material production, int currentScore);
         
-        static List<List<Blueprint>> blueprintSets;
+        static List<(List<Blueprint>, Material maxCosts)> blueprintSets;
 
         static int best;
 
@@ -33,7 +33,8 @@ namespace Day19
                                      new Blueprint(new Material(int.Parse(arr[18]), int.Parse(arr[21]), 0), new Material(0,0,1), false),
                                      new Blueprint(new Material(int.Parse(arr[12]), 0, 0), new Material(0,1,0), false),
                                      new Blueprint(new Material(int.Parse(arr[6]), 0, 0), new Material(1,0,0), false),
-                            }).ToList();
+                            }).Select(bps => (bps, new Material(bps.Max(bp => bp.costs.ore), bps.Max(bp => bp.costs.clay), bps.Max(bp => bp.costs.obsidian)))).ToList();
+
 
             var part1Answers = RunPart(24, blueprintSets);
             var part1 = part1Answers.Sum(tp => tp.Item1 * tp.Item2);
@@ -45,15 +46,16 @@ namespace Day19
             Console.WriteLine($"Part 2: {part2}, elapsed {watch.ElapsedMilliseconds}ms");
         }
 
-        static List<(int index, int geodes)> RunPart(int MAXMINUTES, IEnumerable<List<Blueprint>> blueprintSets)
+        static List<(int index, int geodes)> RunPart(int MAXMINUTES, IEnumerable<(List<Blueprint>, Material)> blueprintSets)
         {
             var answers = new List<(int, int)>();
             var emptyBlueprint = new Blueprint(new Material(0, 0, 0), new Material(0, 0, 0), false);
             foreach ((var blueprints, int i) in blueprintSets.Select((bp, i) => (bp, i)))
             {
                 best = 0;
+
                 //note we start at t=2 with 1 ore
-                var answer = Solve(MAXMINUTES, new Dictionary<State, int>(), blueprints, new State(2, new Material(1, 0, 0), new Material(1, 0, 0), 0));
+                var answer = Solve(MAXMINUTES, new Dictionary<State, int>(), blueprints.Item1, blueprints.Item2, new State(2, new Material(1, 0, 0), new Material(1, 0, 0), 0));
                 Console.WriteLine($"Blueprint {i + 1}: {answer}");
                 answers.Add((i + 1, answer));
             }
@@ -61,7 +63,7 @@ namespace Day19
             return answers;
         }
 
-        static int Solve(int MAXMINUTES, Dictionary<State, int> stateCache, List<Blueprint> blueprints, State state)
+        static int Solve(int MAXMINUTES, Dictionary<State, int> stateCache, List<Blueprint> blueprints, Material maxBpCosts, State state)
         {
             if (stateCache.TryGetValue(state, out int result))
             {
@@ -85,6 +87,13 @@ namespace Day19
                 //the material is what we have at the start of the minute
                 //so minimum time until we can build next robot is next turn, or the first turn when we have sufficient material
 
+                if ((state.production.ore >= maxBpCosts.ore && blueprint.production.ore > 0)
+                    || (state.production.clay >= maxBpCosts.clay && blueprint.production.clay > 0)
+                    || (state.production.obsidian >= maxBpCosts.obsidian && blueprint.production.obsidian > 0))
+                {
+                    continue;
+                }
+
                 var needed = blueprint.costs.Subtract(state.material);
 
                 var timeForOre = Math.Ceiling((decimal)needed.ore / (state.production.ore == 0 ? 0.001m : (decimal) state.production.ore));
@@ -95,7 +104,7 @@ namespace Day19
 
                 if (state.time + nextTime < MAXMINUTES)
                 {
-                    maxGeode = Math.Max(maxGeode, Solve(MAXMINUTES, stateCache, blueprints, 
+                    maxGeode = Math.Max(maxGeode, Solve(MAXMINUTES, stateCache, blueprints, maxBpCosts,
                         state with { 
                             time = state.time + nextTime + 1, 
                             material = state.material.Add(state.production).Add(state.production.Multiply(nextTime)).Subtract(blueprint.costs), 
