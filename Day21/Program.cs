@@ -47,6 +47,7 @@ namespace Day21
             Console.WriteLine(getEquation(values2, "root"));
 
             var part2 = 801541236563053696 / 232925;
+            Console.WriteLine($"Part 2: {part2}");
         }
 
         private static Dictionary<string, (BigInteger nominator, BigInteger denominator)> solve(bool part1)
