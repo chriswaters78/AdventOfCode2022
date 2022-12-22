@@ -163,21 +163,13 @@ namespace Day22
                 }
             }
 
-            switch (direction)
+            rows[position.r][position.c] = direction switch
             {
-                case (0, 1):
-                    rows[position.r][position.c] = '>';
-                    break;
-                case (0, -1):
-                    rows[position.r][position.c] = '<';
-                    break;
-                case (1, 0):
-                    rows[position.r][position.c] = 'v';
-                    break;
-                case (-1, 0):
-                    rows[position.r][position.c] = '^';
-                    break;
-            }
+                (0, 1) => '>',
+                (0, -1) => '<',
+                (1, 0) => 'v',
+                (-1, 0) => '^',
+            };
 
             Console.WriteLine($"Face: {face}, r: {position.r}, c: {position.c}");
             Console.WriteLine(String.Join(Environment.NewLine, rows.Select(sb => sb.ToString())));
@@ -188,114 +180,55 @@ namespace Day22
         {
             switch (face)
             {
-                case Face.Top:
-                    if (position.c < 0)
-                    {
-                        return (Face.Left, (CUBESIZE - 1 - position.r, 0), (0, 1));
-                    }
-                    if (position.c >= CUBESIZE)
-                    {
-                        return (Face.Right, (position.r, 0), (0, 1));
-                    }
-                    if (position.r < 0)
-                    {
-                        return (Face.Back, (position.c, 0), (0, 1));
-                    }
-                    if (position.r >= CUBESIZE)
-                    {
-                        return (Face.Front, (0, position.c), (1, 0));
-                    }
-                    return (face, position, direction);
-                case Face.Right:
-                    if (position.c < 0)
-                    {
-                        return (Face.Top, (position.r, CUBESIZE - 1), (0, -1));
-                    }
-                    if (position.c >= CUBESIZE)
-                    {
-                        return (Face.Bottom, (CUBESIZE - 1 - position.r, CUBESIZE - 1), (0, -1));
-                    }
-                    if (position.r < 0)
-                    {
-                        return (Face.Back, (CUBESIZE - 1, position.c), (-1, 0));
-                    }
-                    if (position.r >= CUBESIZE)
-                    {
-                        return (Face.Front, (position.c, CUBESIZE - 1), (0, -1));
-                    }
-                    return (face, position, direction);
-                case Face.Left:
-                    if (position.c < 0)
-                    {
-                        return (Face.Top, (CUBESIZE - 1 - position.r, 0), (0, 1));
-                    }
-                    if (position.c >= CUBESIZE)
-                    {
-                        return (Face.Bottom, (position.r, 0), (0, 1));
-                    }
-                    if (position.r < 0)
-                    {
-                        return (Face.Front, (position.c, 0), (0, 1));
-                    }
-                    if (position.r >= CUBESIZE)
-                    {
-                        return (Face.Back, (0, position.c), (1, 0));
-                    }
-                    return (face, position, direction);
-                case Face.Back:
-                    if (position.c < 0)
-                    {
-                        return (Face.Top, (0, position.r), (1, 0));
-                    }
-                    if (position.c >= CUBESIZE)
-                    {
-                        return (Face.Bottom, (CUBESIZE - 1, position.r), (-1, 0));
-                    }
-                    if (position.r < 0)
-                    {
-                        return (Face.Left, (CUBESIZE - 1, position.c), (-1, 0));
-                    }
-                    if (position.r >= CUBESIZE)
-                    {
-                        return (Face.Right, (0, position.c), (1, 0));
-                    }
-                    return (face, position, direction);
-                case Face.Front:
-                    if (position.c < 0)
-                    {
-                        return (Face.Left, (0, position.r), (1, 0));
-                    }
-                    if (position.c >= CUBESIZE)
-                    {
-                        return (Face.Right, (CUBESIZE - 1, position.r), (-1, 0));
-                    }
-                    if (position.r < 0)
-                    {
-                        return (Face.Top, (CUBESIZE - 1, position.c), (-1, 0));
-                    }
-                    if (position.r >= CUBESIZE)
-                    {
-                        return (Face.Bottom, (0, position.c), (1, 0));
-                    }
-                    return (face, position, direction);
-                //bottom
+                case Face.Top when position.c < 0:
+                    return (Face.Left, (CUBESIZE - 1 - position.r, 0), (0, 1));
+                case Face.Top when position.c >= CUBESIZE:
+                    return (Face.Right, (position.r, 0), (0, 1));
+                case Face.Top when position.r < 0:
+                    return (Face.Back, (position.c, 0), (0, 1));
+                case Face.Top when position.r >= CUBESIZE:
+                    return (Face.Front, (0, position.c), (1, 0));
+                case Face.Right when position.c < 0:
+                    return (Face.Top, (position.r, CUBESIZE - 1), (0, -1));
+                case Face.Right when position.c >= CUBESIZE:
+                    return (Face.Bottom, (CUBESIZE - 1 - position.r, CUBESIZE - 1), (0, -1));
+                case Face.Right when position.r < 0:
+                    return (Face.Back, (CUBESIZE - 1, position.c), (-1, 0));
+                case Face.Right when position.r >= CUBESIZE:
+                    return (Face.Front, (position.c, CUBESIZE - 1), (0, -1));
+                case Face.Left when position.c < 0:
+                    return (Face.Top, (CUBESIZE - 1 - position.r, 0), (0, 1));
+                case Face.Left when position.c >= CUBESIZE:
+                    return (Face.Bottom, (position.r, 0), (0, 1));
+                case Face.Left when position.r < 0:
+                    return (Face.Front, (position.c, 0), (0, 1));
+                case Face.Left when position.r >= CUBESIZE:
+                    return (Face.Back, (0, position.c), (1, 0));
+                case Face.Back when position.c < 0:
+                    return (Face.Top, (0, position.r), (1, 0));
+                case Face.Back when position.c >= CUBESIZE:
+                    return (Face.Bottom, (CUBESIZE - 1, position.r), (-1, 0));
+                case Face.Back when position.r < 0:
+                    return (Face.Left, (CUBESIZE - 1, position.c), (-1, 0));
+                case Face.Back when position.r >= CUBESIZE:
+                    return (Face.Right, (0, position.c), (1, 0));
+                case Face.Front when position.c < 0:
+                    return (Face.Left, (0, position.r), (1, 0));
+                case Face.Front when position.c >= CUBESIZE:
+                    return (Face.Right, (CUBESIZE - 1, position.r), (-1, 0));
+                case Face.Front when position.r < 0:
+                    return (Face.Top, (CUBESIZE - 1, position.c), (-1, 0));
+                case Face.Front when position.r >= CUBESIZE:
+                    return (Face.Bottom, (0, position.c), (1, 0));
+                case Face.Bottom when position.c < 0:
+                    return (Face.Left, (position.r, CUBESIZE - 1), (0, -1));
+                case Face.Bottom when position.c >= CUBESIZE:
+                    return (Face.Right, (CUBESIZE - 1 - position.r, CUBESIZE - 1), (0, -1));
+                case Face.Bottom when position.r < 0:
+                    return (Face.Front, (CUBESIZE - 1, position.c), (-1, 0));
+                case Face.Bottom when position.r >= CUBESIZE:
+                    return (Face.Back, (position.c, CUBESIZE - 1), (0, -1));
                 default:
-                    if (position.c < 0)
-                    {
-                        return (Face.Left, (position.r, CUBESIZE - 1), (0, -1));
-                    }
-                    if (position.c >= CUBESIZE)
-                    {
-                        return (Face.Right, (CUBESIZE - 1 - position.r, CUBESIZE - 1), (0, -1));
-                    }
-                    if (position.r < 0)
-                    {
-                        return (Face.Front, (CUBESIZE - 1, position.c), (-1, 0));
-                    }
-                    if (position.r >= CUBESIZE)
-                    {
-                        return (Face.Back, (position.c, CUBESIZE - 1), (0, -1));
-                    }
                     return (face, position, direction);
             }
         }
