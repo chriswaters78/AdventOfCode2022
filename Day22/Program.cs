@@ -57,42 +57,42 @@ namespace Day22
                 }
             }
 
-            //var faceMap = new Dictionary<Face, bool[][]>()
-            //{
-            //    { Face.Top, faces[0]},
-            //    { Face.Back, faces[1]},
-            //    { Face.Left, faces[2]},
-            //    { Face.Front, faces[3]},
-            //    { Face.Bottom, faces[4]},
-            //    { Face.Right, faces[5]},
-            //};
-            //var faceIndexMap = new Dictionary<Face, (int r, int c)>()
-            //{
-            //    { Face.Top, (0, 2)},
-            //    { Face.Back, (1, 0)},
-            //    { Face.Left, (1,1)},
-            //    { Face.Front, (1,2)},
-            //    { Face.Bottom, (2,2)},
-            //    { Face.Right, (2,3)},
-            //};
             var faceMap = new Dictionary<Face, bool[][]>()
             {
                 { Face.Top, faces[0]},
-                { Face.Right, faces[1]},
-                { Face.Front, faces[2]},
-                { Face.Left, faces[3]},
+                { Face.Back, faces[1]},
+                { Face.Left, faces[2]},
+                { Face.Front, faces[3]},
                 { Face.Bottom, faces[4]},
-                { Face.Back, faces[5]},
+                { Face.Right, faces[5]},
             };
             var faceIndexMap = new Dictionary<Face, (int r, int c)>()
             {
-                { Face.Top, (0, 1)},
-                { Face.Right, (0, 2)},
-                { Face.Front, (1,1)},
-                { Face.Left, (2,0)},
-                { Face.Bottom, (2,1)},
-                { Face.Back, (3,0)},
+                { Face.Top, (0, 2)},
+                { Face.Back, (1, 0)},
+                { Face.Left, (1,1)},
+                { Face.Front, (1,2)},
+                { Face.Bottom, (2,2)},
+                { Face.Right, (2,3)},
             };
+            //var faceMap = new Dictionary<Face, bool[][]>()
+            //{
+            //    { Face.Top, faces[0]},
+            //    { Face.Right, faces[1]},
+            //    { Face.Front, faces[2]},
+            //    { Face.Left, faces[3]},
+            //    { Face.Bottom, faces[4]},
+            //    { Face.Back, faces[5]},
+            //};
+            //var faceIndexMap = new Dictionary<Face, (int r, int c)>()
+            //{
+            //    { Face.Top, (0, 1)},
+            //    { Face.Right, (0, 2)},
+            //    { Face.Front, (1,1)},
+            //    { Face.Left, (2,0)},
+            //    { Face.Bottom, (2,1)},
+            //    { Face.Back, (3,0)},
+            //};
 
 
             (Face face, (int r, int c) position, (int dr, int dc) direction) state = (Face.Top, (0, 0), (0,1));
@@ -101,7 +101,7 @@ namespace Day22
                 for (int m = 0; m < move.d; m++)
                 {
                     (Face face, (int r, int c) position, (int dr, int dc) direction) nextPosition = (state.face, (state.position.r + state.direction.dr, state.position.c + state.direction.dc), state.direction);
-                    nextPosition = transition1_input(nextPosition.face, nextPosition.position, nextPosition.direction);
+                    nextPosition = transition2_sample(nextPosition.face, nextPosition.position, nextPosition.direction);
                     if (faceMap[nextPosition.face][nextPosition.position.r][nextPosition.position.c])
                     {
                         break;
@@ -130,9 +130,9 @@ namespace Day22
         private static int directionScore((int dr, int dc) direction) => direction switch
         {
             (0, 1) => 0,
-            (-1, 0) => 1,
+            (1, 0) => 1,
             (0, -1) => 2,
-            (1, 0) => 3,
+            (-1, 0) => 3,
         };
 
         private static void print(bool[][] grid, Face face, (int r, int c) position, (int dr, int dc) direction)
@@ -166,6 +166,123 @@ namespace Day22
             Console.WriteLine($"Face: {face}, r: {position.r}, c: {position.c}");
             Console.WriteLine(String.Join(Environment.NewLine, rows.Select(sb => sb.ToString())));
         }
+
+        private static (Face face, (int r, int c) position, (int dr, int dc) direction) transition2_sample(Face face, (int r, int c) position, (int dr, int dc) direction)
+        {
+            switch (face)
+            {
+                case Face.Top:
+                    if (position.c < 0)
+                    {
+                        return (Face.Left, (0, position.r), (-1, 0));
+                    }
+                    if (position.c >= CUBESIZE)
+                    {
+                        return (Face.Right, (0, position.r), (-1, 0));
+                    }
+                    if (position.r < 0)
+                    {
+                        return (Face.Back, (0, CUBESIZE - 1 - position.c), (1,0));
+                    }
+                    if (position.r >= CUBESIZE)
+                    {
+                        return (Face.Front, (0, position.c), (1, 0));
+                    }
+                    return (face, position, direction);
+                case Face.Right:
+                    if (position.c < 0)
+                    {
+                        return (Face.Bottom, (position.r, CUBESIZE - 1), (0, -1));
+                    }
+                    if (position.c >= CUBESIZE)
+                    {
+                        return (Face.Top, (CUBESIZE - 1 - position.r, CUBESIZE - 1), (0, -1));
+                    }
+                    if (position.r < 0)
+                    {
+                        return (Face.Front, (CUBESIZE - 1 - position.c, CUBESIZE - 1), (0, -1));
+                    }
+                    if (position.r >= CUBESIZE)
+                    {
+                        return (Face.Back, (CUBESIZE - 1 - position.c, 0), (1, 0));
+                    }
+                    return (face, position, direction);
+                case Face.Left:
+                    if (position.c < 0)
+                    {
+                        return (Face.Back, (position.r, CUBESIZE - 1), (0, -1));
+                    }
+                    if (position.c >= CUBESIZE)
+                    {
+                        return (Face.Front, (position.r, 0), (0, 1));
+                    }
+                    if (position.r < 0)
+                    {
+                        return (Face.Top, (position.c, 0), (0, 1));
+                    }
+                    if (position.r >= CUBESIZE)
+                    {
+                        return (Face.Bottom, (CUBESIZE - 1 - position.c, 0), (1, 0));
+                    }
+                    return (face, position, direction);
+                case Face.Back:
+                    if (position.c < 0)
+                    {
+                        return (Face.Right, (0, CUBESIZE - 1 - position.c), (1, 0));
+                    }
+                    if (position.c >= CUBESIZE)
+                    {
+                        return (Face.Left, (position.r, 0), (0, 1));
+                    }
+                    if (position.r < 0)
+                    {
+                        return (Face.Top, (0, CUBESIZE - 1 - position.c), (1, 0));
+                    }
+                    if (position.r >= CUBESIZE)
+                    {
+                        return (Face.Bottom, (CUBESIZE - 1, position.c), (-1, 0));
+                    }
+                    return (face, position, direction);
+                case Face.Front:
+                    if (position.c < 0)
+                    {
+                        return (Face.Left, (position.r, CUBESIZE - 1), (0, -1));
+                    }
+                    if (position.c >= CUBESIZE)
+                    {
+                        return (Face.Right, (0, CUBESIZE - 1 - position.r), (1, 0));
+                    }
+                    if (position.r < 0)
+                    {
+                        return (Face.Top, (CUBESIZE - 1, position.c), (-1, 0));
+                    }
+                    if (position.r >= CUBESIZE)
+                    {
+                        return (Face.Bottom, (0, position.c), (1, 0));
+                    }
+                    return (face, position, direction);
+                //bottom
+                default:
+                    if (position.c < 0)
+                    {
+                        return (Face.Left, (CUBESIZE - 1, CUBESIZE - 1 - position.r), (-1, 0));
+                    }
+                    if (position.c >= CUBESIZE)
+                    {
+                        return (Face.Right, (position.r, 0), (0, 1));
+                    }
+                    if (position.r < 0)
+                    {
+                        return (Face.Front, (CUBESIZE - 1, position.c), (-1, 0));
+                    }
+                    if (position.r >= CUBESIZE)
+                    {
+                        return (Face.Back, (CUBESIZE - 1, CUBESIZE - 1 - position.c), (-1, 0));
+                    }
+                    return (face, position, direction);
+            }
+        }
+
 
         private static (Face face, (int r, int c) position, (int dr, int dc) direction) transition1_input(Face face, (int r, int c) position, (int dr, int dc) direction)
         {
