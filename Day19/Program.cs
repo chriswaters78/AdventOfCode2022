@@ -15,7 +15,7 @@ namespace Day19
         
         record struct Blueprint(Material costs, Material production, bool isGeode);
 
-        record struct State(int time, Material material, Material production, int currentScore, int best);
+        record struct State(int time, Material material, Material production, int currentScore);
         record struct BlueprintSet(List<Blueprint> blueprints, Material maxCosts);
 
         static List<BlueprintSet> blueprintSets;
