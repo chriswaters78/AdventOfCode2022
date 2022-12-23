@@ -9,9 +9,20 @@
             new [] { (-1, 1), (0,1), (1,1) },
         };
 
-        static (int dr, int dc)[] cMoves = new (int dr, int dc)[] {
-            (1,0),
+        static (int dr, int dc)[] allOffSets = new (int dr, int dc)[] {
+            (-1,-1),
             (-1,0),
+            (-1,1),
+            (0,-1),
+            (0,1),
+            (1,-1),
+            (1,0),
+            (1,1),
+        };
+
+        static (int dr, int dc)[] cMoves = new (int dr, int dc)[] {
+            (-1,0),
+            (1,0),
             (0,-1),
             (0,1)
         };
@@ -32,31 +43,50 @@
             }
 
             int rounds = 0;
-            while (rounds < 10)
+            while (true)
             {
-                var moves = new List<(int r, int c)>();
+                var moves = new Dictionary<(int r2, int c2), List<(int r1, int c1)>>();
                 foreach ((int r, int c) in elves)
                 {
-                    if (considerations[rounds % 4]
-                        .Select(tp => (r + tp.dr, c + tp.dc))
-                        .All(tp => !elves.Contains(tp)))
+                    if (!allOffSets.Select(tp => (r + tp.dr, c + tp.dc)).Any(tp => elves.Contains(tp)))
                     {
-                        moves.Add((r, c));
+                        continue;
+                    }
+                    for (int co = 0; co < 4; co++)
+                    {
+                        var check = considerations[(rounds + co) % 4].Select(tp => (r + tp.dr, c + tp.dc)).ToList();
+                        if (check.All(tp => !elves.Contains(tp)))
+                        {
+                            var moveTo = (r + cMoves[(rounds + co) % 4].dr, c + cMoves[(rounds + co) % 4].dc);
+                            if (!moves.ContainsKey(moveTo))
+                            {
+                                moves[moveTo] = new List<(int r1, int c1)>();
+                            }
+                            moves[moveTo].Add((r, c));
+                            break;
+                        }
                     }
                 }
 
                 //have all the moves
-                moves = moves.GroupBy(tp => tp).Where(grp => grp.Count() == 1).Select(grp => grp.Key).ToList();
-                foreach (var move in moves)
+                bool anyMoved = false;
+                foreach (var move in moves.Where(kvp => kvp.Value.Count == 1))
                 {
-                    elves.Remove(move);
-                    elves.Add((move.r + cMoves[rounds % 4].dr, move.c + cMoves[rounds % 4].dc));
+                    anyMoved = true;
+                    elves.Remove(move.Value.First());
+                    elves.Add(move.Key);
                 }
                 rounds++;
+                if (!anyMoved)
+                {
+                    break;
+                }
             }
 
-            (int minX, int maxX, int minY, int maxY) = (elves.Min(tp => tp.c), elves.Max(tp => tp.c), elves.Min(tp => tp.r), elves.Max(tp => tp.c));
-            int part1 = (maxY - minY) * (maxX - minX) - elves.Count;
+            //(int minX, int maxX, int minY, int maxY) = (elves.Min(tp => tp.c), elves.Max(tp => tp.c), elves.Min(tp => tp.r), elves.Max(tp => tp.r));
+            //int part1 = (1 + maxY - minY) * (1 + maxX - minX) - elves.Count;
+            //Console.WriteLine($"Part 1: {part1}");
+            Console.WriteLine($"Part 2: {rounds}");
         }
     }
 }
