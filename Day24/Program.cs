@@ -1,11 +1,12 @@
-﻿using System.Numerics;
+﻿using System.Diagnostics;
+using System.Numerics;
 using System.Text;
 
 namespace Day24
 {
     internal class Program
     {
-        record struct State(int r, int c, int t);
+        record struct State(int r, int c, int t, int p);
 
         static HashSet<(int r, int c)>[] grids;
         static Dictionary<State, int> cache = new Dictionary<State, int>();
@@ -19,6 +20,9 @@ namespace Day24
             //2 x 2 x 2 x 3 x 5
             // 5 x 5
             //LCM = 600
+
+            Stopwatch watch = new Stopwatch();
+            watch.Start();
 
             var lines = File.ReadAllLines($"{args[0]}.txt");
             R = lines.Length - 2;
@@ -72,22 +76,30 @@ namespace Day24
                 grids[t].Remove((R, C - 1));
             }
 
-            Console.WriteLine(print(grids[0], new State(-1, 0, 0)));
-            Console.WriteLine();
-            Console.WriteLine(print(grids[1], new State(-1, 0, 0)));
+            //Console.WriteLine(print(grids[0], new State(-1, 0, 0, 0)));
+            //Console.WriteLine();
+            //Console.WriteLine(print(grids[1], new State(-1, 0, 0, 0)));
 
-            solve(new State(-1, 0, 0));
-            int best = int.MaxValue;
+            solve(new State(-1, 0, 0, 0));
+            int best1 = int.MaxValue;
+            int best2 = int.MaxValue;
             for (int t = 0; t < LCM; t++)
             {
-                var finalState = new State(R, C - 1, t);
-                if (cache.ContainsKey(finalState))
+                var finalState1 = new State(R, C - 1, t, 1);
+                var finalState2 = new State(R, C - 1, t, 2);
+                if (cache.ContainsKey(finalState1))
                 {
-                    best = Math.Min(best, cache[finalState]);
+                    best1 = Math.Min(best1, cache[finalState1]);
+                }
+                if (cache.ContainsKey(finalState2))
+                {
+                    best2 = Math.Min(best2, cache[finalState2]);
                 }
             }
 
-            Console.WriteLine($"Part 1: {best}");
+            Console.WriteLine($"Part 1: {best1}");
+            Console.WriteLine($"Part 2: {best2}");
+            Console.WriteLine($"Elapsed time: {watch.ElapsedMilliseconds}ms");
         }
 
         static string print(HashSet<(int r, int c)> grid, State state)
@@ -123,6 +135,24 @@ namespace Day24
             while (queue.Any())
             {
                 var state = queue.Dequeue();
+
+                //Console.WriteLine($"T={state.t}");
+                //Console.WriteLine(print(grids[state.t % LCM], state));
+
+                if (state.r == R && state.c == C - 1)
+                {
+                    if (state.p == 0)
+                    {
+                        state = state with { p = 1 };
+                    }
+                }
+                if (state.r == -1 && state.c == 0)
+                {
+                    if (state.p == 1)
+                    {
+                        state = state with { p = 2 };
+                    }
+                }
                 var cacheKey = state with { t = state.t % LCM };
                 if (cache.TryGetValue(cacheKey, out int result))
                 {
@@ -132,14 +162,9 @@ namespace Day24
                     }
                 }
 
-                Console.WriteLine($"T={state.t}");
-                Console.WriteLine(print(grids[state.t % LCM], state));
-
                 cache[cacheKey] = state.t;
-
-                if (state.r == R && state.c == C - 1)
+                if (state.r == R && state.c == C - 1 && state.p == 2)
                 {
-                    //we have reached the final position
                     continue;
                 }
 
