@@ -42,7 +42,7 @@ namespace Day24
                 {
                     continue;
                 }
-                if (state.position.r == goal.r && state.position.c == goal.c)
+                if (state.position == goal)
                 {
                     return state.t;
                 }
