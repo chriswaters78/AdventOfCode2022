@@ -38,14 +38,10 @@ namespace Day24
             while (queue.Any())
             {
                 var state = queue.Dequeue();
-
-                var cacheKey = state with { t = state.t % LCM };
-                if (cache.TryGetValue(cacheKey, out int result) && state.t >= result)
+                if (!cache.TryAdd(state with { t = state.t % LCM }, state.t))
                 {
                     continue;
                 }
-
-                cache[cacheKey] = state.t;
                 if (state.position.r == goal.r && state.position.c == goal.c)
                 {
                     return state.t;
