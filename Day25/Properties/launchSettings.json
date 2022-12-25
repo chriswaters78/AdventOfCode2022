@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Day25": {
+      "commandName": "Project",
+      "commandLineArgs": "input"
+    }
+  }
+}
