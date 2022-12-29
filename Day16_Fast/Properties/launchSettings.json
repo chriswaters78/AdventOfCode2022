@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Day16_Fast": {
+      "commandName": "Project",
+      "commandLineArgs": "input"
+    }
+  }
+}
