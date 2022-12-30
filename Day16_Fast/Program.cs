@@ -10,7 +10,7 @@ namespace Day16
         static Dictionary<int, (int flow, List<int> edges)> indexGraph;
         static int[,] allPairs;
 
-        record struct State(int time, ulong valves, int currentValve);
+        record struct State(int time, uint valves, int currentValve);
 
         static void Main(string[] args)
         {
@@ -30,10 +30,14 @@ namespace Day16
             var stringToIndex = stringGraph.OrderByDescending(kvp => kvp.Value.Item1).Select((kvp, i) => (kvp.Key, i)).ToDictionary(tp => tp.Key, tp => tp.i);
             indexGraph = stringGraph.ToDictionary(kvp => stringToIndex[kvp.Key], kvp => (kvp.Value.Item1, kvp.Value.Item2.Select(str => stringToIndex[str]).ToList()));
 
-            int bitMask = (int) Math.Pow(2, nonZeroCount) - 1;
+            //get all pairs shortest paths using Floyd-Warshall
+            //note this is the DISTANCE only
+            allPairs = floydWarshall(indexGraph);
+
+            //int bitMask = (int)Math.Pow(2, nonZeroCount) - 1;
             //partition our valve sets into disjoint sets
-            var sets = new List<(List<int> set1, List<int> set2)>();
-            for (ulong i = 0; i < Math.Pow(2, nonZeroCount - 1); i++)
+            var sets = new List<(int[] set1, int[] set2)>();
+            for (uint i = 0; i < Math.Pow(2, nonZeroCount - 1); i++)
             {
                 (var list1, var list2) = (new List<int>(), new List<int>());
                 for (int b = 0; b < nonZeroCount; b++)
@@ -43,57 +47,65 @@ namespace Day16
                     else
                         list2.Add(b);
                 }
-                sets.Add((list1, list2));
+                sets.Add((list1.ToArray(), list2.ToArray()));
             }
 
-            //get all pairs shortest paths using Floyd-Warshall
-            //note this is the DISTANCE only
-            allPairs = floydWarshall(indexGraph);
-
+            Console.WriteLine($"Starting solve after {watch.ElapsedMilliseconds}ms");
             //then for each disjoint item, recursively DFS each side of the set, starting at AA
             //and find the maximum pressure relieved within the time limit
             //the maximum of all of these is the answer
-            var maximums = sets.Select(pair => (solve(new Dictionary<State, int>(), pair.set1, new State(0,0, stringToIndex["AA"]), 0), solve(new Dictionary<State, int>(), pair.set2, new State(0, 0, stringToIndex["AA"]), 0))).ToList();
+
+            var maximums = sets.AsParallel().Select(pair => (Solve(pair.set1, stringToIndex["AA"]), Solve(pair.set2, stringToIndex["AA"]))).ToList();
 
             Console.WriteLine($"Part2: {maximums.Max(maximum => maximum.Item1 + maximum.Item2)} in {watch.ElapsedMilliseconds}ms");
         }
 
-        static int solve(Dictionary<State, int> cache, List<int> toOpen, State currentState, int currentFlow)
+        static int Solve(int[] toOpen, int startValve)
         {
-            //if (cache.TryGetValue(currentState, out int bestFlow) && bestFlow >= currentFlow)
-            //{
-            //    return currentFlow;
-            //}
+            int currentBest = 0;
+            return solve(new Dictionary<State, int>(), toOpen, ref currentBest, new State(0, 0, startValve), 0);
+        }
 
-            //cache[currentState] = currentFlow;
-
-            //we are trying to open all valves in toOpen
-            //we have opened (and added the final score) for all valves with bits set in valves
-            //we have to try each valve remaining in toOpen
-            int best = currentFlow;
-            //start with the closest valves
-            foreach (var nextValve in toOpen /*.OrderBy(valve => allPairs[currentState.currentValve, valve]) */)
+        static int solve(Dictionary<State, int> cache, int[] toOpen, ref int currentBest, State currentState, int currentFlow)
+        {
+            if (cache.TryGetValue(currentState, out int bestFlow) && bestFlow >= currentFlow)
             {
-                if (!IsBitSet(nextValve, currentState.valves))
-                {
-                    //try opening this one next
-                    var timeToValve = allPairs[currentState.currentValve, nextValve];
-                    if (timeToValve + currentState.time + 1 < MINUTES)
-                    {
-                        //we can reach AND open it
-                        int nextFlow = currentFlow + (MINUTES - (timeToValve + currentState.time + 1)) * indexGraph[nextValve].flow;
-                        var nextValves = SetBit(nextValve, currentState.valves);
-                        var nextState = currentState with { currentValve = nextValve, time = currentState.time + timeToValve + 1, valves = nextValves };
-                        int nextBest = solve(cache, toOpen, nextState, nextFlow);
-                        best = Math.Max(best, nextBest);
-                    }
-                }
+                return currentFlow;
+            }
+            cache[currentState] = currentFlow;
+
+            //we need a upper limit for the maximum we can achieve from this point
+            //which we calculate by assuming all remaining valves can be reached in the min time to that valve
+            var canStillOpen = toOpen.Where(i => !IsBitSet(i, currentState.valves)
+                && allPairs[currentState.currentValve, i] + currentState.time + 1 < MINUTES)
+                .OrderBy(i => allPairs[currentState.currentValve, i]).ToArray();
+
+            var maxFlow = canStillOpen.Select(i => (MINUTES - (allPairs[currentState.currentValve, i] + currentState.time + 1)) * indexGraph[i].flow).Sum();
+            if (currentFlow + maxFlow <= currentBest)
+            {
+                return 0;
+            }
+
+            //we are trying to open all valves in toOpen which haven't been opened yet
+            //we have opened (and added the final score) for all valves with bits set in valves
+            int best = currentFlow;
+            foreach (var nextValve in canStillOpen)
+            {
+                var timeToValve = allPairs[currentState.currentValve, nextValve];
+                //we can reach AND open it
+                int nextFlow = currentFlow + (MINUTES - (timeToValve + currentState.time + 1)) * indexGraph[nextValve].flow;
+                var nextValves = SetBit(nextValve, currentState.valves);
+                var nextState = currentState with { currentValve = nextValve, time = currentState.time + timeToValve + 1, valves = nextValves };
+                        
+                int nextBest = solve(cache, canStillOpen, ref currentBest, nextState, nextFlow);
+                best = Math.Max(best, nextBest);
+                currentBest = Math.Max(best, currentBest);
             }
 
             return best;
         }
-        static bool IsBitSet(int bit, ulong state) => (state & (1UL << bit)) != 0;
-        static ulong SetBit(int bit, ulong state) => state |= 1UL << bit;
+        static bool IsBitSet(int bit, uint state) => (state & (1U << bit)) != 0;
+        static uint SetBit(int bit, uint state) => state |= 1U << bit;
         private static int[,] floydWarshall(Dictionary<int, (int flow, List<int> edges)> graph)
         {
             int[,] distance = new int[graph.Count, graph.Count];
