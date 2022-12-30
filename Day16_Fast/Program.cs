@@ -66,7 +66,7 @@ namespace Day16
             return solve(new Dictionary<State, int>(), toOpen, ref currentBest, new State(0, 0, startValve), 0);
         }
 
-        static int solve(Dictionary<State, int> cache, int[] toOpen, ref int globalBest, State currentState, int currentFlow)
+        static int solve(Dictionary<State, int> cache, int[] toOpen, ref int currentBest, State currentState, int currentFlow)
         {
             if (cache.TryGetValue(currentState, out int bestFlow) && bestFlow >= currentFlow)
             {
@@ -81,7 +81,7 @@ namespace Day16
                 .OrderBy(i => allPairs[currentState.currentValve, i]).ToArray();
 
             var maxFlow = canStillOpen.Select(i => (MINUTES - (allPairs[currentState.currentValve, i] + currentState.time + 1)) * indexGraph[i].flow).Sum();
-            if (currentFlow + maxFlow <= globalBest)
+            if (currentFlow + maxFlow <= currentBest)
             {
                 return 0;
             }
@@ -95,9 +95,9 @@ namespace Day16
                 //we can reach AND open it
                 int nextFlow = currentFlow + (MINUTES - (timeToValve + currentState.time + 1)) * indexGraph[nextValve].flow;
                 var nextState = currentState with { currentValve = nextValve, time = currentState.time + timeToValve + 1, valves = SetBit(nextValve, currentState.valves) };                        
-                int nextBest = solve(cache, canStillOpen, ref best, nextState, nextFlow);
+                int nextBest = solve(cache, canStillOpen, ref currentBest, nextState, nextFlow);
                 best = Math.Max(best, nextBest);
-                globalBest = Math.Max(best, globalBest);
+                currentBest = Math.Max(best, currentBest);
             }
 
             return best;
