@@ -31,11 +31,11 @@ namespace Day16
             indexGraph = stringGraph.ToDictionary(kvp => stringToIndex[kvp.Key], kvp => (kvp.Value.Item1, kvp.Value.Item2.Select(str => stringToIndex[str]).ToList()));
 
             //get all pairs shortest paths using Floyd-Warshall
-            //note this is the DISTANCE only
+            //note this is the DISTANCE only so still need to take into account time to open the valve
             allPairs = floydWarshall(indexGraph);
 
-            //int bitMask = (int)Math.Pow(2, nonZeroCount) - 1;
             //partition our valve sets into disjoint sets
+            //skip 1 bit to ensure that we don't count both (A,B) and (B,A)
             var sets = new List<(int[] set1, int[] set2)>();
             for (uint i = 0; i < Math.Pow(2, nonZeroCount - 1); i++)
             {
@@ -66,7 +66,7 @@ namespace Day16
             return solve(new Dictionary<State, int>(), toOpen, ref currentBest, new State(0, 0, startValve), 0);
         }
 
-        static int solve(Dictionary<State, int> cache, int[] toOpen, ref int currentBest, State currentState, int currentFlow)
+        static int solve(Dictionary<State, int> cache, int[] toOpen, ref int globalBest, State currentState, int currentFlow)
         {
             if (cache.TryGetValue(currentState, out int bestFlow) && bestFlow >= currentFlow)
             {
@@ -81,25 +81,23 @@ namespace Day16
                 .OrderBy(i => allPairs[currentState.currentValve, i]).ToArray();
 
             var maxFlow = canStillOpen.Select(i => (MINUTES - (allPairs[currentState.currentValve, i] + currentState.time + 1)) * indexGraph[i].flow).Sum();
-            if (currentFlow + maxFlow <= currentBest)
+            if (currentFlow + maxFlow <= globalBest)
             {
                 return 0;
             }
 
             //we are trying to open all valves in toOpen which haven't been opened yet
-            //we have opened (and added the final score) for all valves with bits set in valves
+            //we have opened (and added the final score) already all valves opened to this point
             int best = currentFlow;
             foreach (var nextValve in canStillOpen)
             {
                 var timeToValve = allPairs[currentState.currentValve, nextValve];
                 //we can reach AND open it
                 int nextFlow = currentFlow + (MINUTES - (timeToValve + currentState.time + 1)) * indexGraph[nextValve].flow;
-                var nextValves = SetBit(nextValve, currentState.valves);
-                var nextState = currentState with { currentValve = nextValve, time = currentState.time + timeToValve + 1, valves = nextValves };
-                        
-                int nextBest = solve(cache, canStillOpen, ref currentBest, nextState, nextFlow);
+                var nextState = currentState with { currentValve = nextValve, time = currentState.time + timeToValve + 1, valves = SetBit(nextValve, currentState.valves) };                        
+                int nextBest = solve(cache, canStillOpen, ref best, nextState, nextFlow);
                 best = Math.Max(best, nextBest);
-                currentBest = Math.Max(best, currentBest);
+                globalBest = Math.Max(best, globalBest);
             }
 
             return best;
