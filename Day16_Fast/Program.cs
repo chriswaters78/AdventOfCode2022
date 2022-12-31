@@ -4,6 +4,8 @@ namespace Day16
 {
     internal class Program
     {
+        record struct State(int time, int currentValve, int currentFlow, uint toOpen);
+
         const int MINUTES = 26;
         const int MAX = 10000;
 
@@ -59,39 +61,58 @@ namespace Day16
         static int Solve(uint toOpen, int startValve)
         {
             int currentBest = 0;
-            return solve(ref currentBest, 0, startValve, toOpen, 0);
+            return solve(new Dictionary<State, int>(), ref currentBest, new State(0, startValve, 0, toOpen));
         }
 
-        static int solve(ref int currentBest, int time, int currentValve, uint toOpen, int currentFlow)
+        static int solve(Dictionary<State, int> cache, ref int currentBest, State state)
         {
+            if (cache.TryGetValue(state, out int result))
+            {
+                return result;
+            }
+
             //we need a upper limit for the maximum we can achieve from this point
             //which we calculate by assuming all remaining valves which it is still possible to open
             //can be reached in the min time to that valve
+
+            var queue = new PriorityQueue<int, int>();
             int maxFlow = 0;
             for (int b = 0; b < nonZeroCount; b++)
-                if (IsBitSet(b, toOpen))
-                    if (allPairs[currentValve, b] + time + 1 < MINUTES)
-                        maxFlow += (MINUTES - (allPairs[currentValve, b] + time + 1)) * indexGraph[b].flow;
+                if (IsBitSet(b, state.toOpen))
+                    if (allPairs[state.currentValve, b] + state.time + 1 < MINUTES)
+                    {
+                        var additionalFlow = (MINUTES - (allPairs[state.currentValve, b] + state.time + 1)) * indexGraph[b].flow;
+                        maxFlow += additionalFlow;
+                        queue.Enqueue(b, -additionalFlow);
+                    }
                     else
-                        toOpen = ClearBit(b, toOpen);
+                    {
+                        //no longer possible to open this valve so remove from set
+                        state.toOpen = ClearBit(b, state.toOpen);
+                    }
 
-            if (currentFlow + maxFlow <= currentBest)
+            if (state.currentFlow + maxFlow <= currentBest)
                 return 0;
 
             //we are trying to open all valves in toOpen which haven't been opened yet
             //we have opened (and added the final score) already all valves opened to this point
-            int best = currentFlow;
-            for (int nextValve = 0; nextValve < nonZeroCount; nextValve++)
-                if (IsBitSet(nextValve, toOpen))
+            int best = state.currentFlow;
+            while (queue.TryDequeue(out int nextValve, out int negAdditionalFlow))
+            {
+                var newState = state with
                 {
-                    var timeAfterOpeningValve = allPairs[currentValve, nextValve] + time + 1;
-                    int nextBest = solve( ref currentBest, timeAfterOpeningValve, nextValve, ClearBit(nextValve, toOpen), 
-                                            currentFlow + (MINUTES - timeAfterOpeningValve) * indexGraph[nextValve].flow);
-                    
-                    best = Math.Max(best, nextBest);
-                    currentBest = Math.Max(best, currentBest);
-                }
+                    time = allPairs[state.currentValve, nextValve] + state.time + 1,
+                    currentFlow = state.currentFlow - negAdditionalFlow,
+                    currentValve = nextValve,
+                    toOpen = ClearBit(nextValve, state.toOpen)
+                };
 
+                int nextBest = solve(cache, ref currentBest, newState);
+                best = Math.Max(best, nextBest);
+                currentBest = Math.Max(best, currentBest);
+            }
+
+            cache[state] = best;
             return best;
         }
         static bool IsBitSet(int bit, uint state) => (state & (1U << bit)) != 0;
