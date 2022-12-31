@@ -71,10 +71,9 @@ namespace Day16
                 return result;
             }
 
-            //we need a upper limit for the maximum we can achieve from this point
-            //which we calculate by assuming all remaining valves which it is still possible to open
-            //can be reached in the min time to that valve
-
+            //calculate upper limit of pressure released assuming all remaining valves are opened in min time for any valve
+            //also remove any valves from our set for where it isn't possible to open them
+            //and form a priority queue based on the total pressure released by moving to that valve next
             var queue = new PriorityQueue<int, int>();
             int maxFlow = 0;
             for (int b = 0; b < nonZeroCount; b++)
@@ -87,29 +86,27 @@ namespace Day16
                     }
                     else
                     {
-                        //no longer possible to open this valve so remove from set
                         state.toOpen = ClearBit(b, state.toOpen);
                     }
 
-            if (state.currentFlow + maxFlow <= currentBest)
-                return 0;
-
-            //we are trying to open all valves in toOpen which haven't been opened yet
-            //we have opened (and added the final score) already all valves opened to this point
             int best = state.currentFlow;
-            while (queue.TryDequeue(out int nextValve, out int negAdditionalFlow))
+            //if we can beat the current global best for these sets then keep trying
+            if (state.currentFlow + maxFlow > currentBest)
             {
-                var newState = state with
+                while (queue.TryDequeue(out int nextValve, out int negAdditionalFlow))
                 {
-                    time = allPairs[state.currentValve, nextValve] + state.time + 1,
-                    currentFlow = state.currentFlow - negAdditionalFlow,
-                    currentValve = nextValve,
-                    toOpen = ClearBit(nextValve, state.toOpen)
-                };
+                    //next state is the minute after we have opened this valve
+                    int nextBest = solve(cache, ref currentBest, state with
+                        {
+                            time = allPairs[state.currentValve, nextValve] + state.time + 1,
+                            currentFlow = state.currentFlow - negAdditionalFlow,
+                            currentValve = nextValve,
+                            toOpen = ClearBit(nextValve, state.toOpen)
+                        });
 
-                int nextBest = solve(cache, ref currentBest, newState);
-                best = Math.Max(best, nextBest);
-                currentBest = Math.Max(best, currentBest);
+                    best = Math.Max(best, nextBest);
+                    currentBest = Math.Max(best, currentBest);
+                }
             }
 
             cache[state] = best;
